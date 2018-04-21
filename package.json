@@ -1,0 +1,22 @@
+{
+  "name": "ld41",
+  "version": "0.1.0",
+  "description": "A video game for Ludum Dare 41",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "webpack"
+  },
+  "keywords": [
+    "game"
+  ],
+  "author": "Piper Thunstrom",
+  "license": "Artistic-2.0",
+  "dependencies": {
+    "pixi.js": "^4.7.3"
+  },
+  "devDependencies": {
+    "webpack": "^4.6.0",
+    "webpack-cli": "^2.0.15"
+  }
+}

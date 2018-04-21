@@ -1,15 +1,21 @@
 import "pixi.js"
+import Wizard from "./wizard.js"
 
 let App = PIXI.Application
 let loader = PIXI.loader
 let resources = PIXI.loader.resources
 let Sprite = PIXI.Sprite
 
+let upArrow = 38
+let downArrow = 40
+let rightArrow = 39
+
 class Game {
     constructor(appSettings) {
         this.app = new App(appSettings)
         this.textures = ["img/wizard.png"]
         this.wizard = undefined
+        this.controller = new Controller(upArrow, downArrow, rightArrow)
         document.body.appendChild(this.app.view)
         loader.add(this.textures).load(this.setup.bind(this))
     }
@@ -20,15 +26,70 @@ class Game {
     }
 
     advance(td) {
+        this.wizard.update(td, this.controller)
+        this.controller.update(td)
     }
 }
 
-class Wizard {
-    constructor(stage, resources) {
-        this.sprite = new Sprite(resources["img/wizard.png"].texture)
-        this.sprite.anchor.set(0.5, 0.5)
-        this.sprite.position.set(300, 200)
-        stage.addChild(this.sprite)
+
+class Controller {
+    constructor(flapKey, diveKey, shootKey) {
+        this.flapControl = new Key(flapKey)
+        this.diveControl = new Key(diveKey)
+        this.shootControl = new Key(shootKey)
+    }
+
+    get flap() {
+        return this.flapControl
+    }
+
+    get dive() {
+        return this.diveControl
+    }
+
+    get shoot() {
+        return this.shootControl
+    }
+
+    update(td) {
+        this.flapControl.update(td)
+        this.diveControl.update(td)
+        this.shootControl.update(td)
+    }
+}
+
+class Key {
+    constructor(keyCode) {
+        this.code = keyCode
+        this.isDown = false
+        this.isHeld = false
+        this.wait = 0
+        window.addEventListener("keydown", this.downHandler.bind(this))
+        window.addEventListener("keyup", this.upHandler.bind(this))
+    }
+
+    upHandler(event) {
+        if (event.keyCode === this.code) {
+            this.isDown = false
+            this.isHeld = false
+        }
+    }
+
+    downHandler(event) {
+        if (event.keyCode === this.code) {
+            this.isDown = true
+        }
+    }
+
+    update(td) {
+        if (!this.isHeld && this.isDown) {
+            if (this.wait) {
+                this.wait = 0
+                this.isHeld = true
+            } else {
+                this.wait += 1
+            }
+        }
     }
 }
 
@@ -37,6 +98,7 @@ let settings = {
     height: 400,
     backgroundColor: 0x1c70ca,
     resolution: window.devicePixelRatio,
+    antialias: true,
 }
 
 let wizardFlight = new Game(settings)

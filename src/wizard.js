@@ -1,20 +1,19 @@
 import "pixi.js"
+import {easeQuadratic} from "./easing"
 
 let Sprite = PIXI.Sprite
 
-let scale = 10  // 10 pixels = 1 meter
-let gravity = 18  // 9.8 meters per second
+let scale = 5  // 10 pixels = 1 meter
+let gravity = 5
+
+let diveVelocity = 200
+let diveAcceleration = 72
 
 function calculateImpulse(meters, td) {
-    return meters * scale * td / 1000
+    return meters * scale * td / 60
 }
 
 class StateManager {
-    constructor () {
-        this._idleState = undefined
-        this._impulseState = undefined
-        this._startDiveState = undefined
-    }
 
     get idleState() {
         if (this._idleState === undefined) {
@@ -40,10 +39,18 @@ class StateManager {
 
     get diveState() {
         if (this._diveState === undefined) {
-            this._diveState = new IdleState()
+            this._diveState = new Dive()
         }
 
         return this._diveState
+    }
+
+    get endDiveState() {
+        if (this._endDiveState === undefined) {
+            this._endDiveState = new EndDive()
+        }
+
+        return this._endDiveState
     }
 }
 
@@ -57,6 +64,7 @@ class Wizard {
         this.sprite.scale.set(0.5, 0.5)
         this.vy = 0
         this.state = stateManager.idleState
+        this.nextState = null
         stage.addChild(this.sprite)
     }
 
@@ -77,12 +85,22 @@ class Wizard {
 
         this.sprite.position.y += calculateImpulse(this.vy, td)
         if (this.sprite.position.y < limiter) {this.sprite.position.y = limiter}
+
+        this.flushState()
     }
 
     changeState(state) {
-        this.state.onExit(this)
-        this.state = state
-        this.state.onEnter(this)
+        this.nextState = state
+    }
+
+    flushState () {
+        if (this.nextState !== null) {
+            this.state.onExit(this)
+            this.state = this.nextState
+            this.state.onEnter(this)
+            this.nextState = null
+        }
+
     }
 }
 
@@ -112,18 +130,22 @@ class IdleState extends State {
             wizard.changeState(stateManager.startDiveState)
         }
     }
+
+    onEnter (agent) {
+        agent.sprite.rotation = 0
+    }
 }
 
 class Impulse extends State {
 
     constructor () {
         super()
-        this.waitTimeStart = 3
+        this.waitTimeStart = 65
         this.waitTime = this.waitTimeStart
     }
 
     onEnter (wizard) {
-        wizard.vy = -100
+        wizard.vy = -28
         this.waitTime = this.waitTimeStart
     }
 
@@ -146,16 +168,16 @@ class EnterDive extends State {
         this.rotation = 0
         this.maxRotation = Math.PI / 3
         this.rotationPerSecond = Math.PI * 2
-        this.terminalVelocity = 200
-        this.extraAcceleration = 72
+        this.terminalVelocity = diveVelocity
+        this.extraAcceleration = diveAcceleration
     }
 
-    onExit (agent) {
+    onEnter (agent) {
         this.rotation = 0
     }
 
     update(agent, td, controller) {
-        this.rotation += this.rotationPerSecond * td / 1000
+        this.rotation += this.rotationPerSecond * td / 60
 
         if (this.rotation >= this.maxRotation) {
             this.rotation = this.maxRotation
@@ -171,6 +193,55 @@ class EnterDive extends State {
         agent.sprite.rotation = this.rotation
         if (agent.vy < 0) {agent.vy = agent.vy * 0.95}
         agent.vy += calculateImpulse(this.extraAcceleration, td)
+    }
+}
+
+class Dive extends State {
+    constructor () {
+        super()
+        this.terminalVelocity = diveVelocity
+        this.extraAcceleration = diveAcceleration
+    }
+
+    update (agent, td, controller) {
+        agent.vy += calculateImpulse(this.extraAcceleration, td)
+
+        if (!controller.dive.isHeld) {
+            agent.changeState(stateManager.endDiveState)
+        }
+    }
+}
+
+class EndDive extends State {
+    constructor () {
+        super()
+        this.runTime = 25
+        this.startRotation = Math.PI / 3
+        this.endRotation = -.1
+        this.differenceRotation = this.startRotation - this.endRotation
+        this.startLift = 200
+        this.differenceLift = 210
+        this.endLift = -10
+    }
+
+    onEnter (agent) {
+        this.startRotation = agent.sprite.rotation
+        this.differenceRotation = this.startRotation - this.endRotation
+        this.startLift = agent.vy
+        this.differenceLift = this.startLift - this.endLift
+        this.runningTime = 0
+    }
+
+    update (agent, td, controller) {
+        this.runningTime += td
+
+        let rotationDifference = easeQuadratic(this.runningTime, 0, this.differenceRotation, this.runTime)
+        let liftDifference = easeQuadratic(this.runningTime, 0, this.differenceLift, this.runTime)
+        agent.vy = this.startLift - liftDifference
+        agent.sprite.rotation = this.startRotation - rotationDifference
+        if (this.runningTime >= this.runTime) {
+            agent.changeState(stateManager.idleState)
+        }
     }
 }
 

@@ -13,7 +13,10 @@ let rightArrow = 39
 class Game {
     constructor(appSettings) {
         this.app = new App(appSettings)
-        this.textures = ["img/wizard.png"]
+        this.textures = [
+            "img/wizard.png",
+            "img/flap.png"
+        ]
         this.wizard = undefined
         this.controller = new Controller(upArrow, downArrow, rightArrow)
         document.body.appendChild(this.app.view)

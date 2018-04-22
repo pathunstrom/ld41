@@ -2,6 +2,7 @@ import "pixi.js"
 import {easeQuadratic} from "./easing"
 
 let Sprite = PIXI.Sprite
+let resources = PIXI.loader.resources
 
 let scale = 5  // 10 pixels = 1 meter
 let gravity = 5
@@ -133,6 +134,7 @@ class IdleState extends State {
 
     onEnter (agent) {
         agent.sprite.rotation = 0
+        agent.sprite.texture = resources["img/wizard.png"].texture
     }
 }
 
@@ -144,9 +146,10 @@ class Impulse extends State {
         this.waitTime = this.waitTimeStart
     }
 
-    onEnter (wizard) {
-        wizard.vy = -28
+    onEnter (agent) {
+        agent.vy = -28
         this.waitTime = this.waitTimeStart
+        agent.sprite.texture = resources["img/flap.png"].texture
     }
 
     update(wizard, td, controller) {
@@ -174,6 +177,7 @@ class EnterDive extends State {
 
     onEnter (agent) {
         this.rotation = 0
+        agent.sprite.texture = resources["img/wizard.png"].texture
     }
 
     update(agent, td, controller) {

@@ -1,5 +1,6 @@
 import "pixi.js"
 import Wizard from "./wizard.js"
+import Dragon from "./dragon.js"
 
 let App = PIXI.Application
 let loader = PIXI.loader
@@ -15,21 +16,25 @@ class Game {
         this.app = new App(appSettings)
         this.textures = [
             "img/wizard.png",
-            "img/flap.png"
+            "img/flap.png",
+            "img/dragon-sm.png",
         ]
         this.wizard = undefined
+        this.dragon = undefined
         this.controller = new Controller(upArrow, downArrow, rightArrow)
         document.body.appendChild(this.app.view)
         loader.add(this.textures).load(this.setup.bind(this))
     }
 
     setup() {
-        this.wizard = new Wizard(this.app.stage, resources)
+        this.wizard = new Wizard(this.app.stage)
+        this.dragon = new Dragon(this.app.stage)
         this.app.ticker.add(this.advance.bind(this))
     }
 
     advance(td) {
         this.wizard.update(td, this.controller)
+        this.dragon.update(td, this.controller)
         this.controller.update(td)
     }
 }

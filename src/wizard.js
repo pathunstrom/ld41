@@ -1,18 +1,12 @@
 import "pixi.js"
 import {easeQuadratic} from "./easing"
+import {calculateImpulse, gravity} from "./physics"
 
 let Sprite = PIXI.Sprite
 let resources = PIXI.loader.resources
 
-let scale = 5  // 10 pixels = 1 meter
-let gravity = 5
-
 let diveVelocity = 200
 let diveAcceleration = 72
-
-function calculateImpulse(meters, td) {
-    return meters * scale * td / 60
-}
 
 class StateManager {
 
@@ -58,7 +52,7 @@ class StateManager {
 let stateManager = new StateManager()
 
 class Wizard {
-    constructor(stage, resources) {
+    constructor(stage) {
         this.sprite = new Sprite(resources["img/wizard.png"].texture)
         this.sprite.anchor.set(0.5, 0.5)
         this.sprite.position.set(150, 200)
@@ -76,7 +70,7 @@ class Wizard {
 
         if (this.sprite.position.y < (400 - limiter)) {
             this.vy += calculateImpulse(gravity, td)
-        } else {
+        } else if (this.vy > 0) {
             this.vy = 0
         }
 

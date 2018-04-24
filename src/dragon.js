@@ -17,9 +17,20 @@ function randomSpawnTime() {
                        maxValue
 }
 
+function makeCollider(object) {
+    let sprite = object.sprite
+    return {
+        position: sprite.position,
+        radius: Math.sqrt(
+            Math.pow(sprite.width / 2, 2) + Math.pow(sprite.height / 2, 2)
+        )
+    }
+}
+
 class DragonManager {
-    constructor (stage) {
+    constructor (stage, player) {
         this.stage = stage
+        this.wizard = player
         this.count = 0
         this.nextSpawn = randomSpawnTime()
         this.active = {
@@ -36,13 +47,11 @@ class DragonManager {
             for (let dragon of dragonSet) {
                 dragon.update(td, controller)
                 if (dragon.sprite.position.x < -50) {
-                    dragonSet.delete(dragon)
-                    this.inactive[setName].push(dragon)
-                    dragon.sprite.visible = false
+
                 }
             }
         }
-
+        this.collisions()
         this.spawn(td)
     }
 
@@ -66,6 +75,26 @@ class DragonManager {
             this.count -= this.nextSpawn
         }
         this.nextSpawn = randomSpawnTime()
+    }
+
+    collisions() {
+        let wizardCollider = makeCollider(this.wizard)
+        for (let dragon in this.active.small) {
+            let dragonCollider = makeCollider(dragon)
+            let xRange = dragonCollider.position.x - wizardCollider.position.x
+            let yRange = dragonCollider.position.y - wizardCollider.position.y
+            let distance = Math.sqrt(Math.pow(xRange, 2) + Math.pow(yRange, 2))
+            if (distance < dragonCollider.radius + wizardCollider.radius) {
+                this.wizard.hit()
+                this.deactivateDragon(dragon)
+            }
+        }
+    }
+
+    deactivateDragon(dragon) {
+        this.active[dragon.size].delete(dragon)
+        this.inactive[dragon.size].push(dragon)
+        dragon.sprite.visible = false
     }
 }
 
